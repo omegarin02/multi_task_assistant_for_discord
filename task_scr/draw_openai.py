@@ -21,6 +21,7 @@ class DrawOpenai:
         self.client = OpenAI()
         #self.client.api_key = config["OPENAI_API_KEY"]
         self.message_dic = {}
+        self.tmp_dir_path = self.config["tmp_dir_path"]
 
     def delete_chat_log(self):
         for thread_id in list(self.message_dic.keys()):
@@ -54,16 +55,19 @@ class DrawOpenai:
             quality=self.config["quality"],
             n=1,
         )
-
-        image_url = response.data[0].url
-        return image_url
+        return response
 
     async def response_chatgpt(self, thread, prompt):
         """
         discordにchat-gptのレスポンスを返すための関数
         """
         response = await self.call_openai(prompt)
-        await thread.send(response)
+        image_bytes = base64.b64decode(response.data[0].b64_json)
+        os.makedirs(self.tmp_dir_path, exist_ok=True)
+        img_path = os.path.join(self.tmp_dir_path, "tmp.png")
+        with open(self.tmp_dir_path,"wb") as fb:
+            fb.write(image_bytes)
+        await thread.send(file=discord.File(img_path))
 
     async def new_draw_chat(self, ctx):
         """

@@ -42,7 +42,9 @@
                 "OPENAI_API_KEY": "Enter your openai api key",
                 "model": "dall-e-3",
                 "size": "1024x1024",
-                "quality": "standard"
+                "quality": "standard",
+                "tmp_dir_path":"tmp"
+
             },
         "live_scheduler":{
             "use":true,
