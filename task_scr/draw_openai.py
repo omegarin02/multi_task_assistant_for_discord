@@ -9,7 +9,7 @@ import json
 from threading import Thread
 import time
 import pytz
-
+import base64
 
 class DrawOpenai:
     def __init__(self, config):
@@ -53,6 +53,7 @@ class DrawOpenai:
             prompt=prompt,
             size=self.config["size"],
             quality=self.config["quality"],
+            response_format="b64_json",
             n=1,
         )
         return response
@@ -65,7 +66,7 @@ class DrawOpenai:
         image_bytes = base64.b64decode(response.data[0].b64_json)
         os.makedirs(self.tmp_dir_path, exist_ok=True)
         img_path = os.path.join(self.tmp_dir_path, "tmp.png")
-        with open(self.tmp_dir_path,"wb") as fb:
+        with open(img_path,"wb") as fb:
             fb.write(image_bytes)
         await thread.send(file=discord.File(img_path))
 
