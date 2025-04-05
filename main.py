@@ -7,7 +7,6 @@ from task_scr import (
     help,
     parrot,
     chat_openai,
-    live_scheduler,
     auto_post_arrange_schedule,
     draw_openai
 )
@@ -21,7 +20,7 @@ function_config = config["function"]
 parrot_config = function_config["parrot"]
 chat_openai_config = function_config["chat_openai"]
 draw_openai_config = function_config["draw_openai"]
-live_scheduler_config = function_config["live_scheduler"]
+#live_scheduler_config = function_config["live_scheduler"]
 auto_post_arrange_schedule_config = function_config["auto_post_arrange_schedule"]
 
 ## 各機能ごとのconfig取り出し
@@ -36,17 +35,6 @@ chat_openai_cls = (
 draw_openai_cls = (
     draw_openai.DrawOpenai(draw_openai_config)
     if draw_openai_config["use"] == True
-    else None
-)
-
-live_scheduler_cls = (
-    live_scheduler.LiveScheduer(
-        live_scheduler_config,
-        common_config["use_google_drive"],
-        common_config["use_google_service_account"],
-        common_config["google_dirive_setting"],
-    )
-    if live_scheduler_config["use"] == True
     else None
 )
 
@@ -76,6 +64,7 @@ client = commands.Bot(command_prefix="/", intents=intents)
 
 
 # bot用スクリプト
+# 自動投稿用スクリプト
 @tasks.loop(minutes=1)
 async def wrapper_auto_post_arrange_schedule():
     if(auto_post_arrange_schedule_cls is not None):
@@ -91,7 +80,7 @@ async def on_ready():
     print("ログインしました")
     wrapper_auto_post_arrange_schedule.start()
 
-
+# メッセージを受信したときの処理
 @client.event
 async def on_message(message):  # メッセージをなにかしら受け取ったときの処理
     if type(message.channel) is discord.Thread:  # スレッドでメッセージを受け取った時
@@ -176,82 +165,6 @@ async def wrapper_new_draw_chat(ctx):
         if draw_openai_cls != None:
             draw_openai_cls.delete_chat_log()
             await draw_openai_cls.new_draw_chat(ctx)
-        else:
-            await ctx.send("この機能は使用できません。")
-    except Exception as e:
-        await ctx.send("Errorが発生しました。次のメッセージをbot管理者にお伝えください。\n {}".format(str(e)))
-
-
-# スケジュール画像の表示
-@client.command("schedule-print")
-async def wrapper_schedule_print(ctx):
-    try:
-        if (
-            live_scheduler_cls != None
-            and live_scheduler_config["commands"]["schedule-print"]["use"] == True
-        ):
-            await ctx.send("スケジュール画像の生成を受け付けました。\n生成までしばらくお待ちください。")
-            await live_scheduler_cls.print_schedule(ctx)
-            shutil.rmtree(live_scheduler_cls.tmp_dir_path)
-        else:
-            await ctx.send("この機能は使用できません。")
-    except Exception as e:
-        await ctx.send("Errorが発生しました。次のメッセージをbot管理者にお伝えください。\n {}".format(str(e)))
-
-
-# スケジュール画像にグリッドを表示
-@client.command("schedule-grid")
-async def wrapper_schedule_grid(ctx):
-    try:
-        if (
-            live_scheduler_cls != None
-            and live_scheduler_config["commands"]["schedule-grid"]["use"] == True
-        ):
-            await ctx.send("グリッドを入れたscheduleのベースイメージを作成中\n生成までしばらくお待ちください。")
-            await live_scheduler_cls.print_grid_schedule_baseimg(ctx)
-            shutil.rmtree(live_scheduler_cls.tmp_dir_path)
-        else:
-            await ctx.send("この機能は使用できません。")
-    except Exception as e:
-        await ctx.send("Errorが発生しました。次のメッセージをbot管理者にお伝えください。\n {}".format(str(e)))
-
-
-@client.command("schedule-show")
-async def wrapper_schedule_show(ctx):
-    try:
-        if (
-            live_scheduler_cls != None
-            and live_scheduler_config["commands"]["schedule-show"]["use"] == True
-        ):
-            await live_scheduler_cls.show_schedule_data(ctx)
-        else:
-            await ctx.send("この機能は使用できません。")
-    except Exception as e:
-        await ctx.send("Errorが発生しました。次のメッセージをbot管理者にお伝えください。\n {}".format(str(e)))
-
-
-@client.command("schedule-edit")
-async def wrapper_schedule_edit(ctx):
-    try:
-        if (
-            live_scheduler_cls != None
-            and live_scheduler_config["commands"]["schedule-edit"]["use"] == True
-        ):
-            channel = ctx.channel
-            date = datetime.datetime.now()
-            date_str = date.strftime("%Y-%m-%d %H:%M")
-            thread_name = "{}現在のスケジュール".format(date_str)
-            # スレッドの作成
-            thread = await channel.create_thread(
-                name=thread_name,
-                reason="スケジュール編集",
-                type=discord.ChannelType.public_thread,
-            )  # スレッドを作る
-            await live_scheduler_cls.edit_schedule(thread)
-            try:
-                shutil.rmtree(live_scheduler_cls.tmp_dir_path)
-            except:
-                pass
         else:
             await ctx.send("この機能は使用できません。")
     except Exception as e:
